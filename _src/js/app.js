@@ -17,33 +17,75 @@ document.addEventListener('DOMContentLoaded', () => {
   // The jokers container is the (only) <section>
   const section = document.querySelector('section');
 
-  // ---------- whimsical SFX: random pop on check ----------
+  // ---------- whimsical SFX (Web Audio: low-latency, iOS-friendly) ----------
+  // You currently have MP3s; this works fine. If you later export WAVs,
+  // just change the extensions here for even snappier starts.
   const SFX_URLS = [
     '/sounds/pop-1.mp3',
     '/sounds/pop-2.mp3'
   ];
-  let sfxBank = [];
+
+  let audioCtx = null;
+  let sfxBuffers = [];
+  let sfxLoading = null;   // Promise during fetch/decode
   let sfxReady = false;
 
-  function initSfx() {
+  function ensureAudioCtx() {
+    if (!audioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new Ctx({ latencyHint: 'interactive' });
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  async function initSfx() {
     if (sfxReady) return;
-    sfxReady = true;
-    sfxBank = SFX_URLS.map(url => {
-      const a = new Audio(url);
-      a.preload = 'auto';
-      a.volume = 0.75; // tweak to taste
-      return a;
-    });
+    ensureAudioCtx();
+    if (!audioCtx || sfxLoading) return;
+
+    sfxLoading = Promise.all(
+      SFX_URLS.map(async (url) => {
+        try {
+          const res = await fetch(url, { cache: 'force-cache' });
+          const arr = await res.arrayBuffer();
+          // Older Safari prefers callback form
+          return await new Promise((resolve, reject) =>
+            audioCtx.decodeAudioData(arr, resolve, reject)
+          );
+        } catch {
+          return null;
+        }
+      })
+    ).then(decoded => {
+      sfxBuffers = decoded.filter(Boolean);
+      sfxReady = sfxBuffers.length > 0;
+    }).catch(() => {}).finally(() => { sfxLoading = null; });
+
+    return sfxLoading;
   }
+
   function playPop() {
-    if (!sfxReady || !sfxBank.length) return;
-    const src = sfxBank[(Math.random() * sfxBank.length) | 0];
-    const inst = src.cloneNode(true); // allow overlaps
-    inst.play().catch(() => {});
+    if (!sfxReady || !audioCtx || !sfxBuffers.length) return;
+    const i = (Math.random() * sfxBuffers.length) | 0;
+    const src = audioCtx.createBufferSource();
+    src.buffer = sfxBuffers[i];
+
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.8; // tweak volume here
+
+    src.connect(gain).connect(audioCtx.destination);
+    src.start(audioCtx.currentTime);
   }
-  // Unlock on first gesture; also init on first keyboard toggle
-  const unlockOnce = () => { initSfx(); document.removeEventListener('pointerdown', unlockOnce); };
-  document.addEventListener('pointerdown', unlockOnce, { passive: true });
+
+  // Unlock & preload on first user interaction (touch/click/keyboard)
+  function unlockAudioOnce() {
+    ensureAudioCtx();
+    initSfx();
+    document.removeEventListener('pointerdown', unlockAudioOnce);
+    document.removeEventListener('keydown', unlockAudioOnce);
+  }
+  document.addEventListener('pointerdown', unlockAudioOnce, { passive: true });
+  document.addEventListener('keydown', unlockAudioOnce);
 
   // ---------- counter / localStorage ----------
   const $count = $('#joker-count');
@@ -176,8 +218,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = cb.id || cb.name;
     if (!id) return;
 
-    // play pop only when turning ON
-    if (cb.checked) { initSfx(); playPop(); }
+    // play pop only when turning ON (ensure context is awake)
+    if (cb.checked) {
+      ensureAudioCtx();
+      initSfx();
+      playPop();
+    }
 
     cb.checked ? checkedSet.add(id) : checkedSet.delete(id);
     saveSet(checkedSet);
