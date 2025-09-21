@@ -83,9 +83,9 @@ button:active {
 
 .button-group {
   display: flex;
-  &:first-child {
-    display: none;
-  }
+}
+.view-toggle {
+  display: none;
 }
 .button-group button {
   padding: calc(.5rem - 2px);
