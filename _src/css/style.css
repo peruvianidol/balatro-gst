@@ -15,6 +15,10 @@
   margin: 0;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 :is(input, button) {
   font: inherit;
 }

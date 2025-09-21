@@ -14,7 +14,7 @@ layout: base.njk
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon"><title>List Layout</title><path d="M11 4v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4c0-1.1.9-2 2-2h5a2 2 0 0 1 2 2ZM4 4v5h5V4H4Zm7 11v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5c0-1.1.9-2 2-2h5a2 2 0 0 1 2 2Zm-7 0v5h5v-5H4ZM14 5a1 1 0 0 1 0-2h7a1 1 0 0 1 0 2h-7Zm0 5a1 1 0 0 1 0-2h7a1 1 0 0 1 0 2h-7Zm0 6a1 1 0 0 1 0-2h7a1 1 0 0 1 0 2h-7Zm0 5a1 1 0 0 1 0-2h7a1 1 0 0 1 0 2h-7Z"/></svg>
       </button>
     </div>
-    <div id="joker-filter" hidden>
+    <div id="joker-filter">
       <label for="filter-jokers" id="filter-help" class="sr-only">Filter jokers</label>
       <input
         id="filter-jokers"
@@ -29,7 +29,7 @@ layout: base.njk
     </div>
   </div>
 
-  <div id="joker-counter" class="counter" hidden aria-live="polite">
+  <div id="joker-counter" class="counter" aria-live="polite">
     <p><span id="joker-count">0</span> of <span id="joker-total">150</span></p>
     <button id="reset-jokers" class="reset">Reset</button>
   </div>
@@ -50,137 +50,3 @@ layout: base.njk
   </label>
 {% endfor %}
 </section>
-
-<script defer>
-document.addEventListener('DOMContentLoaded', () => {
-  const SELECTOR = 'label > input[type="checkbox"]';
-  const STORAGE_KEY = 'balatro:jokers:checked';
-  const filterWrap = document.getElementById('joker-filter');
-
-  // --- counter / localStorage ---
-  const $counter = document.getElementById('joker-counter');
-  const $count   = document.getElementById('joker-count');
-  const $total   = document.getElementById('joker-total');
-
-  const loadSet = () => {
-    try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); }
-    catch { return new Set(); }
-  };
-  const saveSet = (set) => localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
-
-  const boxes = Array.from(document.querySelectorAll(SELECTOR));
-  if ($total) $total.textContent = boxes.length || 150;
-
-  const checkedSet = loadSet();
-  for (const cb of boxes) {
-    const id = cb.id || cb.name;
-    if (id && checkedSet.has(id)) cb.checked = true;
-  }
-
-  const renderCount = () => { if ($count) $count.textContent = checkedSet.size; };
-  renderCount();
-  if ($counter) $counter.hidden = false;
-
-  document.addEventListener('change', (e) => {
-    const cb = e.target;
-    if (!(cb instanceof HTMLInputElement) || !cb.matches(SELECTOR)) return;
-    const id = cb.id || cb.name;
-    if (!id) return;
-    cb.checked ? checkedSet.add(id) : checkedSet.delete(id);
-    saveSet(checkedSet);
-    renderCount();
-  });
-
-  // --- live filter by joker name ---
-  const input = document.getElementById('filter-jokers');
-  const clearBtn = document.getElementById('clear-filter');
-  if (!input) return;
-
-  // Grab every <label> that wraps a joker
-  const labels = Array.from(document.querySelectorAll('label')).filter(l => l.querySelector('input[type="checkbox"]'));
-
-  // Precompute a normalized name key for each label (prefer the <h2>, fallback to alt or label text)
-  const normalize = (s) =>
-    (s || '')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // strip accents
-      .toLowerCase()
-      .replace(/[_\s-]+/g, ' ') // unify separators
-      .trim();
-
-  const lookup = labels.map(label => {
-    const nameEl = label.querySelector('.joker-desc h2') || label.querySelector('h2');
-    const imgEl  = label.querySelector('img');
-    const raw = (nameEl?.textContent) || (imgEl?.alt) || label.textContent;
-    return { label, key: normalize(raw) };
-  });
-
-  function applyFilter(q) {
-    const qNorm = normalize(q);
-    if (!qNorm) {
-      for (const {label} of lookup) label.hidden = false;
-      return;
-    }
-    for (const {label, key} of lookup) {
-      label.hidden = !key.includes(qNorm);
-    }
-  }
-
-  // Clear-button visibility toggle
-  function toggleClearButton() {
-    if (clearBtn) clearBtn.hidden = !input.value;
-  }
-
-  // Update on every keystroke
-  input.addEventListener('input', () => {
-    applyFilter(input.value);
-    toggleClearButton();
-  });
-
-  // Reveal filter UI after wiring up
-  if (filterWrap) filterWrap.hidden = false;
-
-  // Escape clears filter
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && input.value) {
-      input.value = '';
-      applyFilter('');
-      toggleClearButton();
-    }
-  });
-
-  // Clear button behavior
-  if (clearBtn) {
-    clearBtn.hidden = true; // start hidden
-    clearBtn.addEventListener('click', () => {
-      input.value = '';
-      applyFilter('');
-      input.focus();
-      toggleClearButton();
-    });
-  }
-
-  // Initialize clear button state once on load
-  toggleClearButton();
-
-  // --- reset all stickers ---
-  const resetBtn = document.getElementById('reset-jokers');
-  if (resetBtn) {
-    resetBtn.hidden = false;
-    resetBtn.addEventListener('click', () => {
-      localStorage.removeItem(STORAGE_KEY);
-      document.querySelectorAll(SELECTOR).forEach(cb => { cb.checked = false; });
-      if (typeof checkedSet !== 'undefined') checkedSet.clear?.();
-      if (typeof renderCount === 'function') {
-        renderCount();
-      } else {
-        const countEl = document.getElementById('joker-count');
-        if (countEl) countEl.textContent = '0';
-      }
-    });
-  }
-});
-</script>
-
-<noscript>
-  <style>#joker-filter{display:none!important}</style>
-</noscript>
