@@ -14,6 +14,37 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(null, '', u.toString());
   };
 
+  // The jokers container is the (only) <section>
+  const section = document.querySelector('section');
+
+  // ---------- whimsical SFX: random pop on check ----------
+  const SFX_URLS = [
+    '/sounds/pop-1.mp3',
+    '/sounds/pop-2.mp3'
+  ];
+  let sfxBank = [];
+  let sfxReady = false;
+
+  function initSfx() {
+    if (sfxReady) return;
+    sfxReady = true;
+    sfxBank = SFX_URLS.map(url => {
+      const a = new Audio(url);
+      a.preload = 'auto';
+      a.volume = 0.75; // tweak to taste
+      return a;
+    });
+  }
+  function playPop() {
+    if (!sfxReady || !sfxBank.length) return;
+    const src = sfxBank[(Math.random() * sfxBank.length) | 0];
+    const inst = src.cloneNode(true); // allow overlaps
+    inst.play().catch(() => {});
+  }
+  // Unlock on first gesture; also init on first keyboard toggle
+  const unlockOnce = () => { initSfx(); document.removeEventListener('pointerdown', unlockOnce); };
+  document.addEventListener('pointerdown', unlockOnce, { passive: true });
+
   // ---------- counter / localStorage ----------
   const $count = $('#joker-count');
   const $total = $('#joker-total');
@@ -24,7 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const saveSet = (set) => localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
 
-  const boxes = $$(SELECTOR);
+  // Only the joker checkboxes inside the section (exclude external controls)
+  const boxes = Array.from(section ? section.querySelectorAll(SELECTOR)
+                                   : document.querySelectorAll(SELECTOR));
   if ($total) $total.textContent = boxes.length || 150;
 
   const checkedSet = loadSet();
@@ -35,19 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const renderCount = () => { if ($count) $count.textContent = checkedSet.size; };
   renderCount();
-
-  // Toggle handling (localStorage only)
-  document.addEventListener('change', (e) => {
-    const cb = e.target;
-    if (!(cb instanceof HTMLInputElement) || !cb.matches(SELECTOR)) return;
-    const id = cb.id || cb.name;
-    if (!id) return;
-    cb.checked ? checkedSet.add(id) : checkedSet.delete(id);
-    saveSet(checkedSet);
-    renderCount();
-    // If filter/hide logic is present, re-apply visibility immediately
-    if (typeof applyVisibility === 'function') applyVisibility();
-  });
 
   // ============================================================
   //                FILTER + HIDE-CHECKED (PERSISTED)
@@ -64,14 +84,15 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/[_\s-]+/g, ' ')
       .trim();
 
-  // Build lookup once (labels that wrap a checkbox)
-  const section = document.querySelector('section'); // the one that holds the jokers
-  const labels = Array.from(section ? section.querySelectorAll('label') : document.querySelectorAll('section label'))
+  // Build lookup once (labels that wrap a checkbox) scoped to the jokers section
+  const labels = Array.from(section ? section.querySelectorAll('label')
+                                   : document.querySelectorAll('section label'))
     .filter(l => {
       const cb = l.querySelector('input[type="checkbox"]');
       // exclude the "Hide collected" control if it's ever inside the section
       return cb && (!hideBox || !l.contains(hideBox));
     });
+
   const lookup = labels.map(label => {
     const nameEl = label.querySelector('.joker-desc h2') || label.querySelector('h2');
     const imgEl  = label.querySelector('img');
@@ -87,7 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch { hideCheckedState = false; }
   if (hideBox) hideBox.checked = hideCheckedState;
 
-  // Expose as function so the change listener above can call it
   function applyVisibility() {
     const qNorm = normalize(input ? input.value : '');
     const hideChecked = hideBox ? hideBox.checked : false;
@@ -138,12 +158,39 @@ document.addEventListener('DOMContentLoaded', () => {
   applyVisibility();
   toggleClearButton();
 
+  // ---------- Toggle handling (localStorage only) ----------
+  document.addEventListener('change', (e) => {
+    const cb = e.target;
+    if (!(cb instanceof HTMLInputElement) || cb.type !== 'checkbox') return;
+
+    // Ignore the "Hide collected" checkbox entirely
+    if (hideBox && cb === hideBox) {
+      applyVisibility();
+      return;
+    }
+
+    // Only handle joker checkboxes inside the section
+    if (!section || !section.contains(cb)) return;
+    if (!cb.matches(SELECTOR)) return;
+
+    const id = cb.id || cb.name;
+    if (!id) return;
+
+    // play pop only when turning ON
+    if (cb.checked) { initSfx(); playPop(); }
+
+    cb.checked ? checkedSet.add(id) : checkedSet.delete(id);
+    saveSet(checkedSet);
+    renderCount();
+    applyVisibility();
+  });
+
   // ============================================================
   //                     VIEW + ORDER TOGGLES
   // ============================================================
 
   // container is the single <section> on the page
-  const container = document.querySelector('section');
+  const container = section;
 
   // VIEW buttons: expect two buttons somewhere with data-view="grid|list"
   const viewBtns  = document.querySelectorAll('[data-view]');
@@ -182,10 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---------------- ORDER (alpha/game) — robust + unhides section ----------------
 
   // pick the <section> that actually contains the jokers (labels with checkboxes)
-  const sortContainer = (() => {
-    const sections = Array.from(document.querySelectorAll('section'));
-    return sections.find(sec => sec.querySelector('label input[type="checkbox"]')) || sections[0] || null;
-  })();
+  const sortContainer = section;
 
   // helpers
   const getItems = () => {
@@ -287,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderCount();
 
       // 4) re-apply visibility so everything shows if "Hide collected" is on
-      if (typeof applyVisibility === 'function') applyVisibility();
+      applyVisibility();
     });
   }
 });
