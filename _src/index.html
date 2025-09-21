@@ -44,9 +44,16 @@ layout: base.njk
   </div>
 </div>
 
+<div>
+  <label class="hide-checked-control">
+    <input id="hide-checked" type="checkbox">
+    <span>Hide collected</span>
+  </label>
+</div>
+
 <section>
 {% for joker in jokers %}
-  <label for="{{ joker.name | slug }}" data-order="{{ joker.order }}" data-name="{{ joker.name }}" data-slug="{{ joker.name | slug }}">
+  <label for="{{ joker.name | slug }}" data-order="{{ joker.order }}" data-name="{{ joker.name }}" data-slug="{{ joker.name | slug }}" class="joker-label">
     <input type="checkbox" name="{{ joker.name | slug }}" id="{{ joker.name | slug }}">
     <div class="joker-img">
       <img src="/images/{% if joker.name === "Hologram" %}{{ joker.name | slug }}.gif{% else %}{{ joker.name | slug }}.png{% endif %}" alt="{{ joker.name }}" width="142" height="190">

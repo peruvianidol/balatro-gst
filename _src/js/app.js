@@ -1,9 +1,11 @@
+// /js/app.js
 document.addEventListener('DOMContentLoaded', () => {
-  const SELECTOR = 'label > input[type="checkbox"]';
+  const SELECTOR    = 'label > input[type="checkbox"]';
   const STORAGE_KEY = 'balatro:jokers:checked';
+  const HIDE_KEY    = 'balatro:hide-checked';
 
   // ---------- helpers ----------
-  const $ = (s, r = document) => r.querySelector(s);
+  const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const getParam = (k) => new URL(location.href).searchParams.get(k);
   const setParam = (k, v) => {
@@ -43,64 +45,102 @@ document.addEventListener('DOMContentLoaded', () => {
     cb.checked ? checkedSet.add(id) : checkedSet.delete(id);
     saveSet(checkedSet);
     renderCount();
+    // If filter/hide logic is present, re-apply visibility immediately
+    if (typeof applyVisibility === 'function') applyVisibility();
   });
 
-  // ---------- live filter ----------
-  const input = $('#filter-jokers');
+  // ============================================================
+  //                FILTER + HIDE-CHECKED (PERSISTED)
+  // ============================================================
+  const input    = $('#filter-jokers');
   const clearBtn = $('#clear-filter');
+  const hideBox  = $('#hide-checked');
 
-  if (input) {
-    const labels = $$('label').filter(l => l.querySelector('input[type="checkbox"]'));
+  // Normalize helper for text filtering
+  const normalize = (s) =>
+    (s || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[_\s-]+/g, ' ')
+      .trim();
 
-    const normalize = (s) =>
-      (s || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[_\s-]+/g, ' ')
-        .trim();
-
-    const lookup = labels.map(label => {
-      const nameEl = label.querySelector('.joker-desc h2') || label.querySelector('h2');
-      const imgEl  = label.querySelector('img');
-      const raw = (nameEl?.textContent) || (imgEl?.alt) || label.textContent;
-      return { label, key: normalize(raw) };
+  // Build lookup once (labels that wrap a checkbox)
+  const section = document.querySelector('section'); // the one that holds the jokers
+  const labels = Array.from(section ? section.querySelectorAll('label') : document.querySelectorAll('section label'))
+    .filter(l => {
+      const cb = l.querySelector('input[type="checkbox"]');
+      // exclude the "Hide collected" control if it's ever inside the section
+      return cb && (!hideBox || !l.contains(hideBox));
     });
+  const lookup = labels.map(label => {
+    const nameEl = label.querySelector('.joker-desc h2') || label.querySelector('h2');
+    const imgEl  = label.querySelector('img');
+    const raw    = (nameEl?.textContent) || (imgEl?.alt) || label.textContent;
+    const cb     = label.querySelector('input[type="checkbox"]');
+    return { label, key: normalize(raw), cb };
+  });
 
-    function applyFilter(q) {
-      const qNorm = normalize(q);
-      if (!qNorm) { for (const {label} of lookup) label.hidden = false; return; }
-      for (const {label, key} of lookup) label.hidden = !key.includes(qNorm);
+  // Persisted hide state: read on load, default false
+  let hideCheckedState = false;
+  try {
+    hideCheckedState = JSON.parse(localStorage.getItem(HIDE_KEY) || 'false') === true;
+  } catch { hideCheckedState = false; }
+  if (hideBox) hideBox.checked = hideCheckedState;
+
+  // Expose as function so the change listener above can call it
+  function applyVisibility() {
+    const qNorm = normalize(input ? input.value : '');
+    const hideChecked = hideBox ? hideBox.checked : false;
+
+    for (const { label, key, cb } of lookup) {
+      const matchesText = !qNorm || key.includes(qNorm);
+      const shouldHideForSticker = hideChecked && !!cb?.checked;
+      label.hidden = !matchesText || shouldHideForSticker;
     }
+  }
 
-    const toggleClearButton = () => { if (clearBtn) clearBtn.hidden = !input.value; };
+  function toggleClearButton() {
+    if (clearBtn && input) clearBtn.hidden = !input.value;
+  }
 
-    input.addEventListener('input', () => { applyFilter(input.value); toggleClearButton(); });
+  // Wire filter input
+  if (input) {
+    input.addEventListener('input', () => { applyVisibility(); toggleClearButton(); });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && input.value) {
-        input.value = ''; applyFilter(''); toggleClearButton();
+        input.value = '';
+        applyVisibility();
+        toggleClearButton();
       }
     });
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        input.value = ''; applyFilter(''); input.focus(); toggleClearButton();
-      });
-      clearBtn.hidden = !input.value;
-    }
   }
 
-  // ---------- reset all ----------
-  const resetBtn = $('#reset-jokers');
-  if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
-      localStorage.removeItem(STORAGE_KEY);
-      $$(SELECTOR).forEach(cb => { cb.checked = false; });
-      checkedSet.clear?.();
-      renderCount();
+  // Clear button
+  if (clearBtn && input) {
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      applyVisibility();
+      input.focus();
+      toggleClearButton();
+    });
+    clearBtn.hidden = !input.value;
+  }
+
+  // Hide-checked toggle (persisted)
+  if (hideBox) {
+    hideBox.addEventListener('change', () => {
+      localStorage.setItem(HIDE_KEY, JSON.stringify(!!hideBox.checked));
+      applyVisibility();
     });
   }
 
-  
-  // View and Order toggles
+  // Initial pass
+  applyVisibility();
+  toggleClearButton();
+
+  // ============================================================
+  //                     VIEW + ORDER TOGGLES
+  // ============================================================
 
   // container is the single <section> on the page
   const container = document.querySelector('section');
@@ -109,13 +149,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const viewBtns  = document.querySelectorAll('[data-view]');
   // ORDER buttons: expect two buttons with data-order="alpha|game"
   const orderBtns = Array.from(document.querySelectorAll('[data-order="alpha"], [data-order="game"]'));
+
   // ---------- VIEW ----------
   function applyView(viewMode) {
     if (!container) return;
-    // Toggle classes on the section itself
     container.classList.toggle('is-grid', viewMode === 'grid');
     container.classList.toggle('is-list', viewMode === 'list');
-    // Reflect active state on buttons (data-active present on the active one)
     viewBtns.forEach(btn => {
       if (btn.getAttribute('data-view') === viewMode) btn.setAttribute('data-active', '');
       else btn.removeAttribute('data-active');
@@ -140,15 +179,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ---------- ORDER ----------
-
   // ---------------- ORDER (alpha/game) — robust + unhides section ----------------
 
-// pick the <section> that actually contains the jokers (labels with checkboxes)
-const sortContainer = (() => {
-  const sections = Array.from(document.querySelectorAll('section'));
-  return sections.find(sec => sec.querySelector('label input[type="checkbox"]')) || sections[0] || null;
-})();
+  // pick the <section> that actually contains the jokers (labels with checkboxes)
+  const sortContainer = (() => {
+    const sections = Array.from(document.querySelectorAll('section'));
+    return sections.find(sec => sec.querySelector('label input[type="checkbox"]')) || sections[0] || null;
+  })();
 
   // helpers
   const getItems = () => {
@@ -207,6 +244,12 @@ const sortContainer = (() => {
     const u = new URL(location.href);
     u.searchParams.set('order', mode);
     history.replaceState(null, '', u.toString());
+
+    // Re-apply filter/hide after reordering to maintain visibility rules
+    applyVisibility();
+
+    // IMPORTANT: unhide if we pre-hid for ordering
+    document.documentElement.classList.remove('preorder-hide');
   }
 
   // initial mode
@@ -217,9 +260,6 @@ const sortContainer = (() => {
 
   applyOrder(orderMode);
 
-  // IMPORTANT: unhide if we pre-hid for ordering
-  document.documentElement.classList.remove('preorder-hide');
-
   // clicks
   orderBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -229,4 +269,25 @@ const sortContainer = (() => {
       applyOrder(orderMode);
     });
   });
+
+  // ============================================================
+  //                         RESET ALL
+  // ============================================================
+  const resetBtn = document.getElementById('reset-jokers');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      // 1) clear storage + in-memory set (persist empty array for consistency)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+      checkedSet.clear?.();
+
+      // 2) uncheck all boxes
+      boxes.forEach(cb => { cb.checked = false; });
+
+      // 3) update UI
+      renderCount();
+
+      // 4) re-apply visibility so everything shows if "Hide collected" is on
+      if (typeof applyVisibility === 'function') applyVisibility();
+    });
+  }
 });

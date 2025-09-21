@@ -10,9 +10,10 @@ TODO
 ✅ Sort by game order or alphabetical
 ✅ Focus styles on cards
 ✅ Add responsive styles
+✅ Add opacity transition on stickers
+✅ Favicon
 * Show/Hide checked jokers
-* Popover for card details
-* Add opacity transition on stickers
+❌ Popover for card details
 * Maybe add a sound effect on sticker apply?
 * About page
 * Postman notebook

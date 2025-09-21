@@ -46,11 +46,11 @@ body {
   width: 24px;
   height: 24px;
 }
-label {
+label.joker-label  {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: .5rem;
+  gap: .75rem;
   align-items: center;
   margin-inline: auto;
   max-width: 142px;
@@ -58,19 +58,19 @@ label {
 label[hidden] {
   display: none;
 }
-[type="checkbox"] {
+.joker-label [type="checkbox"] {
   appearance: none;
   position: absolute;
   inset: 0;  
 }
-[type="checkbox"]:focus-visible {
+.joker-label [type="checkbox"]:focus-visible {
   outline: none;
 }
 :focus-visible {
   outline: 2px solid var(--common);
   outline-offset: 1px;
 }
-[type="checkbox"]:focus-visible + .joker-img img {
+.joker-label [type="checkbox"]:focus-visible + .joker-img img {
   outline: 3px solid var(--common);
   outline-offset: 1px;
   border-radius: 4px;
@@ -160,12 +160,11 @@ h2 {
 
 [class*="rarity"] {
   border-radius: 2rem;
-  font-size: .75rem;
+  font-size: .6875rem;
   font-weight: 400;
   text-align: center;
   padding: .25rem .5rem;
   display: inline-block;
-  /* text-shadow: 1px 1px 1px rgb(0 0 0 / .6); */
 }
 .rarity-rare {
   background-color: var(--rare);
@@ -282,6 +281,18 @@ label:focus .joker-img {
   border-color: transparent;
 }
 
+div:has(.hide-checked-control) {
+  text-align: left;
+  margin-block-end: 1.5rem;
+}
+.hide-checked-control {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+  font-size: .75rem;
+}
+
 .counter[hidden] { display: block; visibility: hidden; }
 .sr-only { position:absolute; left:-9999px; }
 .preorder-hide section { visibility: hidden; }
@@ -306,5 +317,8 @@ label:focus .joker-img {
   }
   main {
     padding: 2rem 1rem;
+  }
+  .stack {
+    margin-block-end: 1rem;
   }
 }
