@@ -14,8 +14,10 @@ TODO
 ✅ Favicon
 ✅ Show/Hide checked jokers
 ✅ Add a sound effect on sticker apply?
-* Sound toggle
-* About modal
+✅ Sound toggle
+✅ About modal
+* Add a social image + site description
+* Confirm modal for reset
 ❌ Popover for card details
 ❌ List view
 ❌ Postman notebook
