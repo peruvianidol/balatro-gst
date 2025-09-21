@@ -12,8 +12,10 @@ TODO
 ✅ Add responsive styles
 ✅ Add opacity transition on stickers
 ✅ Favicon
-* Show/Hide checked jokers
+✅ Show/Hide checked jokers
+✅ Add a sound effect on sticker apply?
+* Sound toggle
+* About modal
 ❌ Popover for card details
-* Maybe add a sound effect on sticker apply?
-* About page
-* Postman notebook
+❌ List view
+❌ Postman notebook

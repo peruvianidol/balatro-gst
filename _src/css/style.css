@@ -309,6 +309,15 @@ footer {
   }
 }
 
+.button-group button,
+section label,
+#reset-jokers,
+#clear-filter,
+#hide-checked + label,
+#hide-checked {
+  touch-action: manipulation;
+}
+
 .counter[hidden] { display: block; visibility: hidden; }
 .sr-only { position:absolute; left:-9999px; }
 .preorder-hide section { visibility: hidden; }
