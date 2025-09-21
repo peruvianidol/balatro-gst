@@ -1,15 +1,12 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-
-const DATA_FILE = path.join(process.cwd(), "_src/_data/jokers.json");
+// ESM import of JSON so it gets bundled with the function
+import data from "../../_src/_data/jokers.json" assert { type: "json" };
 
 export async function handler(event) {
-  const data = JSON.parse(await fs.readFile(DATA_FILE, "utf8"));
-
+  // 'data' is the parsed array already (no fs needed)
   const params = new URLSearchParams(event.queryStringParameters || {});
   const order = params.get("order") || "alpha";
 
-  let out = [...data];
+  const out = [...data];
   if (order === "game") {
     out.sort((a, b) => (a.order ?? 9e9) - (b.order ?? 9e9));
   } else {

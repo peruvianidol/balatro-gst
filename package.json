@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "@11ty/eleventy": "^3.1.2",
-    "cheerio": "^1.1.0"
+    "cheerio": "^1.1.0",
+    "netlify-cli": "^23.6.0"
   }
 }
