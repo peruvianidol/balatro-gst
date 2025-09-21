@@ -8,6 +8,11 @@ TODO
 ✅ Clear filter text
 ✅ Grid / List view toggle
 ✅ Sort by game order or alphabetical
+✅ Focus styles on cards
+✅ Add responsive styles
 * Show/Hide checked jokers
 * Popover for card details
+* Add opacity transition on stickers
+* Maybe add a sound effect on sticker apply?
 * About page
+* Postman notebook

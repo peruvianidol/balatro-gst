@@ -32,13 +32,13 @@ html {
 .counter span {
   font-weight: 600;
 }
-button {
+button, label {
   cursor: pointer;
 }
 body {
   font-family: var(--font-family), sans-serif;
   background-color: var(--background);
-  min-width: 332px;
+  min-width: 340px;
 }
 .icon {
   display: block;
@@ -47,7 +47,7 @@ body {
   height: 24px;
 }
 label {
-  cursor: pointer;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: .5rem;
@@ -58,10 +58,26 @@ label {
 label[hidden] {
   display: none;
 }
-
+[type="checkbox"] {
+  appearance: none;
+  position: absolute;
+  inset: 0;  
+}
+[type="checkbox"]:focus-visible {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--common);
+  outline-offset: 1px;
+}
+[type="checkbox"]:focus-visible + .joker-img img {
+  outline: 3px solid var(--common);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
 main {
   color: white;
-  padding: 1rem;
+  padding: 3rem 2rem;
   text-align: center;
   max-width: 806px;
   margin-inline: auto;
@@ -191,10 +207,6 @@ section {
   right: 6px;
   top: 6px;
 }
-
-[type="checkbox"] {
-  display: none;
-}
 .reset {
   background-color: var(--rare);
   color: white;
@@ -223,7 +235,7 @@ label:focus .joker-img {
   outline: 2px solid red;
 }
 
-:checked + .joker-img:before {
+.joker-img:before {
   content: "";
   display: block;
   width: 32px;
@@ -235,6 +247,12 @@ label:focus .joker-img {
   top: 10px;
   right: 10px;
   z-index: 10;
+  opacity: 0;
+  transition: opacity .05s ease-in-out;
+}
+
+:checked + .joker-img:before {
+  opacity: 1;
 }
 
 .flex,
@@ -267,3 +285,26 @@ label:focus .joker-img {
 .counter[hidden] { display: block; visibility: hidden; }
 .sr-only { position:absolute; left:-9999px; }
 .preorder-hide section { visibility: hidden; }
+
+@media (width < 537px) {
+  #joker-filter {
+    flex: 1;
+  }
+  #joker-filter, #joker-filter input {
+    width: 100%;
+  }
+  .flex {
+    width: 100%;
+  }
+  .counter {
+    width: 100%;
+    justify-content: space-between;
+  }
+  h1 {
+    font-size: 1.375rem;
+    margin-block-end: 1rem;
+  }
+  main {
+    padding: 2rem 1rem;
+  }
+}
