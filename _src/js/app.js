@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const boxes = Array.from(document.querySelectorAll(SELECTOR));
   if ($total) $total.textContent = boxes.length || 150;
 
-  let checkedSet = loadSet();
+  const checkedSet = loadSet();
   for (const cb of boxes) {
     const id = cb.id || cb.name;
     if (id && checkedSet.has(id)) cb.checked = true;
@@ -24,41 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderCount = () => { if ($count) $count.textContent = checkedSet.size; };
   renderCount();
 
-  // --- API helpers (stickers) ---
-  async function loadStickersFromApi() {
-    try {
-      const r = await fetch('/api/stickers');
-      if (!r.ok) throw 0;
-      const { checked } = await r.json();
-      return new Set(Array.isArray(checked) ? checked : []);
-    } catch {
-      return null; // fall back to localStorage if API not reachable
-    }
-  }
-
-  async function saveStickersToApi(set) {
-    try {
-      await fetch('/api/stickers', {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ checked: [...set] })
-      });
-    } catch {/* non-fatal */}
-  }
-
-  // Prefer server state if available, then sync UI + localStorage
-  loadStickersFromApi().then(apiSet => {
-    if (!apiSet) return;
-    checkedSet = apiSet;
-    for (const cb of boxes) {
-      const id = cb.id || cb.name;
-      if (id) cb.checked = checkedSet.has(id);
-    }
-    saveSet(checkedSet);
-    renderCount();
-  });
-
-  // Toggle handling
+  // Toggle handling (localStorage only)
   document.addEventListener('change', (e) => {
     const cb = e.target;
     if (!(cb instanceof HTMLInputElement) || !cb.matches(SELECTOR)) return;
@@ -67,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     cb.checked ? checkedSet.add(id) : checkedSet.delete(id);
     saveSet(checkedSet);
     renderCount();
-    saveStickersToApi(checkedSet);
   });
 
   // --- live filter by joker name ---
@@ -75,16 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearBtn = document.getElementById('clear-filter');
 
   if (input) {
-    // Grab every <label> that wraps a joker
     const labels = Array.from(document.querySelectorAll('label'))
       .filter(l => l.querySelector('input[type="checkbox"]'));
 
-    // Precompute a normalized name key for each label (prefer the <h2>, fallback to alt or label text)
     const normalize = (s) =>
       (s || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // strip accents
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
-        .replace(/[_\s-]+/g, ' ') // unify separators
+        .replace(/[_\s-]+/g, ' ')
         .trim();
 
     const lookup = labels.map(label => {
@@ -109,13 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (clearBtn) clearBtn.hidden = !input.value;
     }
 
-    // Wire filter
     input.addEventListener('input', () => {
       applyFilter(input.value);
       toggleClearButton();
     });
 
-    // Esc to clear
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && input.value) {
         input.value = '';
@@ -124,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Clear button
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
         input.value = '';
@@ -132,12 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
         input.focus();
         toggleClearButton();
       });
-      // initial state
-      clearBtn.hidden = !input.value;
+      clearBtn.hidden = !input.value; // initial
     }
   }
 
-  // --- reset all stickers ---
+  // --- reset all stickers (local only) ---
   const resetBtn = document.getElementById('reset-jokers');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
@@ -145,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll(SELECTOR).forEach(cb => { cb.checked = false; });
       checkedSet.clear?.();
       renderCount();
-      saveStickersToApi(checkedSet);
     });
   }
 });
