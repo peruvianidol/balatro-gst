@@ -23,8 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const MUTE_KEY = 'balatro:sfx-muted';
   const sfxToggleBtn = document.getElementById('sfx-toggle');
   const XLINK = 'http://www.w3.org/1999/xlink';
-  let isMuted = false;
 
+  // Ensure a sane default if the key is missing (unmuted)
+  if (localStorage.getItem(MUTE_KEY) === null) {
+    localStorage.setItem(MUTE_KEY, 'false');
+  }
+
+  let isMuted = false;
   try { isMuted = JSON.parse(localStorage.getItem(MUTE_KEY) || 'false') === true; }
   catch { isMuted = false; }
 
@@ -318,10 +323,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = cb.id || cb.name;
     if (!id) return;
 
-    // play pop only when turning ON (ensure context and decode)
+    // play pop only when turning ON
     if (cb.checked) {
+      // Force unlock and init in case this is the very first gesture
+      unlockAudioOnce();        // safe if already removed
       ensureAudioCtx();
-      await initSfx(); // safe if already done
+      await initSfx();          // safe if already done
+
+      // If the UI shows "sound-on" but state is muted (stale storage), auto-align once
+      const use = sfxToggleBtn?.querySelector('use');
+      const iconHref = use ? (use.getAttribute('href') || use.getAttribute('xlink:href')) : null;
+      const showingOn = iconHref === '#sound-on';
+      if (showingOn && isMuted) {
+        isMuted = false;
+        localStorage.setItem(MUTE_KEY, 'false');
+        setToggleIcon(false);
+      }
+
       playPop();
     }
 
