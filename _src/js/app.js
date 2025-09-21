@@ -18,6 +18,36 @@ document.addEventListener('DOMContentLoaded', () => {
   const section = document.querySelector('section');
 
   // ============================================================
+  //                   SOUND TOGGLE (persisted)
+  // ============================================================
+  const MUTE_KEY = 'balatro:sfx-muted';
+  const sfxToggleBtn = document.getElementById('sfx-toggle');
+  const XLINK = 'http://www.w3.org/1999/xlink';
+  let isMuted = false;
+
+  try { isMuted = JSON.parse(localStorage.getItem(MUTE_KEY) || 'false') === true; }
+  catch { isMuted = false; }
+
+  function setToggleIcon(stateMuted) {
+    if (!sfxToggleBtn) return;
+    const use = sfxToggleBtn.querySelector('use');
+    if (!use) return;
+    const href = stateMuted ? '#sound-off' : '#sound-on';
+    // set both for widest Safari compatibility
+    use.setAttribute('href', href);
+    use.setAttributeNS(XLINK, 'xlink:href', href);
+    sfxToggleBtn.setAttribute('aria-pressed', String(!stateMuted));
+    sfxToggleBtn.setAttribute('aria-label', stateMuted ? 'Sound off' : 'Sound on');
+  }
+  setToggleIcon(isMuted);
+
+  sfxToggleBtn?.addEventListener('click', () => {
+    isMuted = !isMuted;
+    localStorage.setItem(MUTE_KEY, JSON.stringify(isMuted));
+    setToggleIcon(isMuted);
+  });
+
+  // ============================================================
   //      whimsical SFX (Web Audio w/ iOS unlock + fallback)
   // ============================================================
   // If you later export WAVs, just change the extensions below.
@@ -96,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function playPopWebAudio() {
+    if (isMuted) return false; // respect mute
     if (!sfxReady || !audioCtx || !sfxBuffers.length) return false;
     try {
       const i = (Math.random() * sfxBuffers.length) | 0;
@@ -112,6 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function playPopFallback() {
+    if (isMuted) return false; // respect mute
     if (!htmlAudioFallbacks.length) return false;
     const i = (Math.random() * htmlAudioFallbacks.length) | 0;
     // clone for overlap

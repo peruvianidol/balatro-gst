@@ -19,6 +19,9 @@
 html {
   scrollbar-gutter: stable;
 }
+html:has(dialog[open]) {
+  overflow-y: clip;
+}
 
 :is(input, button) {
   font: inherit;
@@ -318,6 +321,71 @@ section label,
   touch-action: manipulation;
 }
 
+.floating-buttons {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+}
+.ghost-button {
+  background-color: transparent;
+  color: rgb(255 255 255 / .4);
+  padding: .25rem;
+  height: 2rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  &:hover,
+  &:focus-visible {
+    color: rgb(255 255 255 / 1);
+    background-color: var(--uncommon);
+  }
+  .icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+dialog {
+  z-index: 20;
+  top: 3.25rem;
+  text-align: left;
+  width: min(calc(100% - 2rem), max(650px));
+  max-height: calc(100% - 6.5rem);
+  margin-inline: auto;
+  border: 0;
+  border-radius: .25rem;
+  padding: 2rem;
+  background-color: var(--background);
+  color: white;
+  box-shadow: 0px 0px 1px rgb(0 0 0 / .5), 0px 12px 20px rgb(0 0 0 / 0.5), 0px 16px 28px -8px rgb(0 0 0 / 0.5);
+  :not(:last-child) {
+    margin-block-end: 1rem;
+  }
+  &::backdrop {
+    background-color: rgb(0 0 0 / .6);
+  }
+  p {
+    line-height: 1.5;
+  }
+  a {
+    color: inherit;
+    text-underline-offset: 2px;
+  }
+}
+
+mark {
+  background-color: transparent;
+  font-weight: 600;
+  color: gold;
+}
+
+.text-sm {
+  font-size: .875em;
+}
+
+
 .counter[hidden] { display: block; visibility: hidden; }
 .sr-only { position:absolute; left:-9999px; }
 .preorder-hide section { visibility: hidden; }
@@ -341,9 +409,13 @@ section label,
     margin-block-end: 1rem;
   }
   main {
-    padding: 2rem 1rem;
+    padding: 3rem 1rem;
   }
   .stack {
     margin-block-end: 1rem;
+  }
+  dialog {
+    padding: 1rem;
+    font-size: .875em;
   }
 }
