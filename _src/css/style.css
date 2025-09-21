@@ -3,6 +3,7 @@
 
 :root {
   --background: #1E282B;
+  --gold: gold;
   --common: #008DFA;
   --uncommon: #34B886;
   --rare: #F94C3F;
@@ -82,6 +83,9 @@ button:active {
 
 .button-group {
   display: flex;
+  &:first-child {
+    display: none;
+  }
 }
 .button-group button {
   padding: calc(.5rem - 2px);
@@ -113,6 +117,9 @@ h1 {
   margin-block-end: 2rem;
   text-wrap: balance;
   font-weight: 900;
+  span {
+    color: var(--gold);
+  }
 }
 
 h2 {
@@ -259,3 +266,4 @@ label:focus .joker-img {
 
 .counter[hidden] { display: block; visibility: hidden; }
 .sr-only { position:absolute; left:-9999px; }
+.preorder-hide section { visibility: hidden; }
