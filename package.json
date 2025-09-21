@@ -1,0 +1,17 @@
+{
+  "name": "sticker-tracker",
+  "version": "1.0.0",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx @11ty/eleventy --serve",
+    "build": "npx @11ty/eleventy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@11ty/eleventy": "^3.1.2",
+    "cheerio": "^1.1.0"
+  }
+}

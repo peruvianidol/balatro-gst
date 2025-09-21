@@ -1,0 +1,9 @@
+[build]
+  command   = "npx eleventy"
+  publish   = "_site"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/jokers"
+  to   = "/.netlify/functions/jokers"
+  status = 200

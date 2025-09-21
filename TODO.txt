@@ -1,0 +1,13 @@
+TODO 
+
+✅ Filter by name
+✅ Save checked items in local storage
+✅ Show number of checked items
+✅ Only show filter if JS is working
+✅ Clear all checked jokers
+* Clear filter text
+* Popover for card details
+* Grid / List view toggle
+* Sort by game order or alphabetical
+* Show/Hide checked jokers
+* About page
